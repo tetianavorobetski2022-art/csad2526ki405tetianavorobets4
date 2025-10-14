@@ -1,0 +1,40 @@
+tetianavorobetski2022-art:  Створити вихідний файл за допомогою Copilot: У корені репозиторію
+створіть файл main.cpp з мінімальною програмою "Hello World":
+
+
+Workspace: Sure, here is the file you requested:[main.cpp](command:github.copilot.openFile?%5B%7B%22value%22%3A%5B%7B%22name%22%3A%22main.cpp%22%7D%5D%2C%22baseUri%22%3A%7B%22%24mid%22%3A1%2C%22path%22%3A%22%2Fmain.cpp%22%2C%22scheme%22%3A%22vscode-copilot-file%22%2C%22authority%22%3A%222e14adc1-cb44-4fd3-98c6-d520842a1732%22%7D%7D%5D)
+
+Create File...
+
+tetianavorobetski2022-art: Як ексортувати історію розмови з тобою у файл
+
+GitHub Copilot: Ось кілька простих способів зберегти історію розмови у файл.
+
+1) Через інтерфейс (web):
+- Натисніть Ctrl+P → виберіть «Save as PDF» (Зберегти як PDF) → Зберегти.
+
+2) Копіювання в текстовий файл:
+- Виділіть текст розмови → Ctrl+C → Відкрийте Блокнот → Ctrl+V → Файл → Зберегти як → conversation.txt.
+
+3) Через консоль браузера (швидко експортує видимий текст з основної області чату). Відкрийте DevTools (F12) → Console → вставте і виконайте цей код — буде завантажено файл .txt:
+
+````javascript
+// Вставити в консоль браузера на сторінці чату
+(() => {
+  const main = document.querySelector('main') || document.body;
+  const text = (main && main.innerText) ? main.innerText.trim() : document.body.innerText.trim();
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const dt = new Date().toISOString().replace(/[:.]/g,'-');
+  a.download = `chat-history-${dt}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+})();
+````
+
+4) Через API: якщо користуєтесь API, зберігайте масив повідомлень (messages) у файл на боці сервера (JSON або текст).
+
+Потрібна інструкція для конкретного середовища (наприклад, Windows, VS Code або конкретний сайт)?
