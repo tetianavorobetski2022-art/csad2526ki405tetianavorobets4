@@ -12,7 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Вивід виконуваних файлів у bin/
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Збір джерел: спочатку src/, якщо немає — корінь
+# Збір джерел: src/ і корінь
 file(GLOB_RECURSE ALL_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
     "${CMAKE_SOURCE_DIR}/src/*.c"
@@ -66,26 +66,27 @@ if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/unit_tests.cpp")
       googletest
       URL https://github.com/google/googletest/archive/refs/heads/main.zip
     )
-    # Не намагатись збирати googletest як частину інтернет-відключеного середовища
+    # Завантажити і додати googletest
     FetchContent_MakeAvailable(googletest)
 
-    # Створити виконуваний файл для тестів
+    # Створити тестовий виконуваний файл з наявного файла tests/unit_tests.cpp.
+    # У вашому tests/unit_tests.cpp вже є власний main(), тому лінкуємо з GTest::gtest (не з gtest_main),
+    # щоб не було конфлікту двох main.
     add_executable(${PROJECT_NAME}_tests
         tests/unit_tests.cpp
     )
 
-    # Забезпечити інклюди для тестів (щоб #include "../math_operations.h" / інші працювали)
     target_include_directories(${PROJECT_NAME}_tests PRIVATE ${CMAKE_SOURCE_DIR})
 
-    # Якщо є бібліотека проекту — лінкуємо тести з нею, інакше додаємо всі джерела проекту в тестовий таргет
+    # Лінкування: GTest (без gtest_main, оскільки main у тестах) і (за наявності) бібліотека проекту
+    target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest)
     if(TARGET ${PROJECT_NAME}_lib)
-        target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest_main ${PROJECT_NAME}_lib)
+        target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME}_lib)
     else()
-        # Якщо немає окремої бібліотеки, підключаємо загальні джерела прямо до тестів
+        # Якщо не маєте окремої бібліотеки, додайте загальні джерела до тестів (щоб використовувати add())
         if(ALL_SOURCES)
             target_sources(${PROJECT_NAME}_tests PRIVATE ${ALL_SOURCES})
         endif()
-        target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest_main)
     endif()
 
     if(MSVC)
@@ -94,7 +95,6 @@ if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/unit_tests.cpp")
         target_compile_options(${PROJECT_NAME}_tests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 
-    # Додати тест до CTest
     add_test(NAME unit_tests COMMAND ${PROJECT_NAME}_tests)
 endif()
 
