@@ -1,0 +1,66 @@
+// ...existing code...
+cmake_minimum_required(VERSION 3.16)
+
+# Ім'я проекту — взято з імені папки репозиторію
+get_filename_component(PROJECT_NAME ${CMAKE_SOURCE_DIR} NAME)
+project(${PROJECT_NAME} LANGUAGES CXX)
+
+# Стандарт C++
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Вивід виконуваних файлів у bin/
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Збір джерел: спочатку src/, якщо немає — корінь
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/*.c"
+)
+if(NOT PROJECT_SOURCES)
+    file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/*.cpp"
+        "${CMAKE_SOURCE_DIR}/*.c"
+    )
+endif()
+
+# Визначити, чи є main-файли — тоді створюємо executable, інакше бібліотеку
+file(GLOB MAIN_FILES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*main*.cpp"
+    "${CMAKE_SOURCE_DIR}/*main*.cpp"
+)
+
+if(PROJECT_SOURCES)
+    if(MAIN_FILES)
+        add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+    else()
+        add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
+    endif()
+
+    # Якщо є папка include — підключаємо її
+    if(EXISTS "${CMAKE_SOURCE_DIR}/include")
+        target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    endif()
+
+    # Опції компілятора
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+else()
+    message(WARNING "No source files found. Додайте файли в src/ або корінь проекту (*.cpp).")
+endif()
+
+# Тести — якщо є папка tests з CMakeLists.txt
+option(BUILD_TESTS "Enable building of tests" ON)
+if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/CMakeLists.txt")
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# Правила встановлення
+if(TARGET ${PROJECT_NAME})
+    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
+endif()
