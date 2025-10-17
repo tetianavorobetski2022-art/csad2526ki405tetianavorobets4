@@ -1,0 +1,383 @@
+tetianavorobetski2022-art: . Створити файл: У корені репозиторію створіть файл з назвою
+CMakeLists.txt.
+2. Використовуючи Copilot згенерувати наповнення файлу
+
+Workspace: Sure, here's a proposed directory structure for a project app:
+
+
+Create Workspace...
+
+tetianavorobetski2022-art: Заповни CmakeLists.txt
+
+GitHub Copilot: ```cmake
+// ...existing code...
+cmake_minimum_required(VERSION 3.16)
+
+project(csad2526ki405tetianavorobets4 LANGUAGES CXX)
+
+# C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Collect sources (common layouts: src/, or root .cpp files)
+file(GLOB_RECURSE PROJECT_SOURCES
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/*.c"
+)
+if(NOT PROJECT_SOURCES)
+    file(GLOB PROJECT_SOURCES "${CMAKE_SOURCE_DIR}/*.cpp" "${CMAKE_SOURCE_DIR}/*.c")
+endif()
+
+# Create executable (if no sources found, create an empty target to avoid configure error)
+if(PROJECT_SOURCES)
+    add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+else()
+    add_executable(${PROJECT_NAME} EXCLUDE_FROM_ALL main.cpp)
+    message(WARNING "No sources found automatically. Add sources under src/ or root *.cpp files.")
+endif()
+
+# Tests (optional)
+option(BUILD_TESTS "Enable building of tests" ON)
+if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/CMakeLists.txt")
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# Install rule
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
+```
+
+tetianavorobetski2022-art: Перероби в залежності від репозиторію
+
+GitHub Copilot: Ось адаптований CMakeLists.txt для вашого репозиторію — покладіть файл у корінь проекту (замінює існуючий).
+
+```cmake
+// ...existing code...
+cmake_minimum_required(VERSION 3.16)
+
+# Ім'я проекту — взято з імені папки репозиторію
+get_filename_component(PROJECT_NAME ${CMAKE_SOURCE_DIR} NAME)
+project(${PROJECT_NAME} LANGUAGES CXX)
+
+# Стандарт C++
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Вивід виконуваних файлів у bin/
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Збір джерел: спочатку src/, якщо немає — корінь
+file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/*.c"
+)
+if(NOT PROJECT_SOURCES)
+    file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/*.cpp"
+        "${CMAKE_SOURCE_DIR}/*.c"
+    )
+endif()
+
+# Визначити, чи є main-файли — тоді створюємо executable, інакше бібліотеку
+file(GLOB MAIN_FILES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*main*.cpp"
+    "${CMAKE_SOURCE_DIR}/*main*.cpp"
+)
+
+if(PROJECT_SOURCES)
+    if(MAIN_FILES)
+        add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+    else()
+        add_library(${PROJECT_NAME} STATIC ${PROJECT_SOURCES})
+    endif()
+
+    # Якщо є папка include — підключаємо її
+    if(EXISTS "${CMAKE_SOURCE_DIR}/include")
+        target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+    endif()
+
+    # Опції компілятора
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+else()
+    message(WARNING "No source files found. Додайте файли в src/ або корінь проекту (*.cpp).")
+endif()
+
+# Тести — якщо є папка tests з CMakeLists.txt
+option(BUILD_TESTS "Enable building of tests" ON)
+if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/CMakeLists.txt")
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# Правила встановлення
+if(TARGET ${PROJECT_NAME})
+    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
+endif()
+```
+
+tetianavorobetski2022-art:  У math_operations.h та math_operations.cpp за допомогою Copilot створіть функцію int
+add(int a, int b);
+
+
+GitHub Copilot: Створено два файли з реалізацією функції add:
+
+```cpp
+#ifndef MATH_OPERATIONS_H
+#define MATH_OPERATIONS_H
+
+int add(int a, int b);
+
+#endif // MATH_OPERATIONS_H
+```
+
+```cpp
+#include "math_operations.h"
+
+int add(int a, int b) {
+    return a + b;
+}
+```
+
+tetianavorobetski2022-art: unit_tests.cpp Напишіть юніт тести за допомогою Copilot
+
+GitHub Copilot: ```cpp
+// ...existing code...
+#include <iostream>
+#include <cstdlib>
+
+// Підключіть заголовок; якщо ваш math_operations.h знаходиться в іншому місці,
+// змініть шлях відповідно (наприклад: "../include/math_operations.h").
+#include "../math_operations.h"
+
+static int run_tests() {
+    int failed = 0;
+
+    // Тест 1: просте додавання
+    if (add(2, 3) != 5) {
+        std::cerr << "FAIL: add(2, 3) != 5\n";
+        ++failed;
+    }
+
+    // Тест 2: нулі
+    if (add(0, 0) != 0) {
+        std::cerr << "FAIL: add(0, 0) != 0\n";
+        ++failed;
+    }
+
+    // Тест 3: від'ємні числа
+    if (add(-4, -6) != -10) {
+        std::cerr << "FAIL: add(-4, -6) != -10\n";
+        ++failed;
+    }
+
+    // Тест 4: змішані знаки
+    if (add(7, -2) != 5) {
+        std::cerr << "FAIL: add(7, -2) != 5\n";
+        ++failed;
+    }
+
+    // Тест 5: великі значення (без перевірки переповнення)
+    if (add(100000, 200000) != 300000) {
+        std::cerr << "FAIL: add(100000, 200000) != 300000\n";
+        ++failed;
+    }
+
+    return failed;
+}
+
+int main() {
+    int failed = run_tests();
+    if (failed == 0) {
+        std::cout << "All tests passed.\n";
+        return 0;
+    } else {
+        std::cerr << failed << " test(s) failed.\n";
+        return EXIT_FAILURE;
+    }
+}
+// ...existing code...
+```
+
+tetianavorobetski2022-art: ○ Використовуйте Copilot для додавання підтримки Google Test у ваш
+CMakeLists.txt.
+○ Далі, за допомогою Copilot, додайте інструкції для створення тестового
+виконуваного файлу та запуску тестів
+
+
+GitHub Copilot: ```cmake
+// ...existing code...
+cmake_minimum_required(VERSION 3.16)
+
+# Ім'я проекту — взято з імені папки репозиторію
+get_filename_component(PROJECT_NAME ${CMAKE_SOURCE_DIR} NAME)
+project(${PROJECT_NAME} LANGUAGES CXX)
+
+# Стандарт C++
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Вивід виконуваних файлів у bin/
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Збір джерел: спочатку src/, якщо немає — корінь
+file(GLOB_RECURSE ALL_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/*.c"
+    "${CMAKE_SOURCE_DIR}/*.cpp"
+    "${CMAKE_SOURCE_DIR}/*.c"
+)
+
+# Знайти main-файли, щоб не включати їх у бібліотеку
+file(GLOB_RECURSE MAIN_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/src/*main*.cpp"
+    "${CMAKE_SOURCE_DIR}/*main*.cpp"
+)
+
+# Підготувати список для бібліотеки (ALL_SOURCES без MAIN_SOURCES)
+set(LIB_SOURCES ${ALL_SOURCES})
+if(MAIN_SOURCES)
+    list(REMOVE_ITEM LIB_SOURCES ${MAIN_SOURCES})
+endif()
+
+# Якщо є джерела для бібліотеки — створюємо бібліотеку
+if(LIB_SOURCES)
+    add_library(${PROJECT_NAME}_lib STATIC ${LIB_SOURCES})
+    target_include_directories(${PROJECT_NAME}_lib PUBLIC ${CMAKE_SOURCE_DIR})
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME}_lib PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${PROJECT_NAME}_lib PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endif()
+
+# Якщо є main-файли — створюємо виконуваний файл і лінкуємо з бібліотекою (якщо є)
+if(MAIN_SOURCES)
+    add_executable(${PROJECT_NAME} ${MAIN_SOURCES})
+    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
+    if(TARGET ${PROJECT_NAME}_lib)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_lib)
+    endif()
+endif()
+
+if(NOT LIB_SOURCES AND NOT MAIN_SOURCES)
+    message(WARNING "No source files found. Додайте файли в src/ або корінь проекту (*.cpp).")
+endif()
+
+# Тести — якщо увімкнені
+option(BUILD_TESTS "Enable building of tests" ON)
+if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/unit_tests.cpp")
+    enable_testing()
+
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/refs/heads/main.zip
+    )
+    # Не намагатись збирати googletest як частину інтернет-відключеного середовища
+    FetchContent_MakeAvailable(googletest)
+
+    # Створити виконуваний файл для тестів
+    add_executable(${PROJECT_NAME}_tests
+        tests/unit_tests.cpp
+    )
+
+    # Забезпечити інклюди для тестів (щоб #include "../math_operations.h" / інші працювали)
+    target_include_directories(${PROJECT_NAME}_tests PRIVATE ${CMAKE_SOURCE_DIR})
+
+    # Якщо є бібліотека проекту — лінкуємо тести з нею, інакше додаємо всі джерела проекту в тестовий таргет
+    if(TARGET ${PROJECT_NAME}_lib)
+        target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest_main ${PROJECT_NAME}_lib)
+    else()
+        # Якщо немає окремої бібліотеки, підключаємо загальні джерела прямо до тестів
+        if(ALL_SOURCES)
+            target_sources(${PROJECT_NAME}_tests PRIVATE ${ALL_SOURCES})
+        endif()
+        target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest_main)
+    endif()
+
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME}_tests PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${PROJECT_NAME}_tests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+
+    # Додати тест до CTest
+    add_test(NAME unit_tests COMMAND ${PROJECT_NAME}_tests)
+endif()
+
+# Правила встановлення
+if(TARGET ${PROJECT_NAME})
+    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
+endif()
+if(TARGET ${PROJECT_NAME}_lib)
+    install(TARGETS ${PROJECT_NAME}_lib ARCHIVE DESTINATION lib)
+endif()
+```
+
+tetianavorobetski2022-art:     # Створити виконуваний файл для тестів
+    add_executable(${PROJECT_NAME}_tests
+        tests/unit_tests.cpp
+    )
+У мене вже є файл для тестів, чи то для підключення тестів?
+
+GitHub Copilot: GitHub Copilot
+
+Якщо файл unit_tests.cpp вже є — add_executable(...) створює тестовий виконуваний файл з цього джерела. Потрібно лише підключити GoogleTest (FetchContent або system package), включити потрібні інклуди та залінкувати GTest та вашу бібліотеку/сировини проекту, після чого додати add_test(...).
+
+Ось компактний фрагмент CMake для вставки в ваш CMakeLists.txt (замінює або доповнює секцію тестів):
+
+```cmake
+// ...existing code...
+option(BUILD_TESTS "Enable building of tests" ON)
+if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/unit_tests.cpp")
+    enable_testing()
+
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/refs/heads/main.zip
+    )
+    FetchContent_MakeAvailable(googletest)
+
+    # Створити тестовий виконуваний файл з наявного файлу
+    add_executable(${PROJECT_NAME}_tests
+        tests/unit_tests.cpp
+    )
+
+    # Інклуди (щоб коректно підключити math_operations.h)
+    target_include_directories(${PROJECT_NAME}_tests PRIVATE ${CMAKE_SOURCE_DIR})
+
+    # Лінкування: GTest та (за наявності) бібліотека проекту
+    if(TARGET ${PROJECT_NAME}_lib)
+        target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest_main ${PROJECT_NAME}_lib)
+    else()
+        # Якщо немає окремої бібліотеки – можна підключити всі джерела проекту в тести
+        file(GLOB_RECURSE ALL_SOURCES CONFIGURE_DEPENDS
+            "${CMAKE_SOURCE_DIR}/src/*.cpp"
+            "${CMAKE_SOURCE_DIR}/*.cpp"
+        )
+        if(ALL_SOURCES)
+            target_sources(${PROJECT_NAME}_tests PRIVATE ${ALL_SOURCES})
+        endif()
+        target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest_main)
+    endif()
+
+    add_test(NAME unit_tests COMMAND ${PROJECT_NAME}_tests)
+endif()
+```
