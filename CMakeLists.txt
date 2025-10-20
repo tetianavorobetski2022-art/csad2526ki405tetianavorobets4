@@ -12,34 +12,47 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Вивід виконуваних файлів у bin/
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Збір джерел: src/ і корінь
-file(GLOB_RECURSE ALL_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_SOURCE_DIR}/src/*.c"
-    "${CMAKE_SOURCE_DIR}/*.cpp"
-    "${CMAKE_SOURCE_DIR}/*.c"
-)
-
-# Знайти main-файли, щоб не включати їх у бібліотеку
-file(GLOB_RECURSE MAIN_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/src/*main*.cpp"
-    "${CMAKE_SOURCE_DIR}/*main*.cpp"
-)
-
-# Підготувати список для бібліотеки (ALL_SOURCES без MAIN_SOURCES)
-set(LIB_SOURCES ${ALL_SOURCES})
-if(MAIN_SOURCES)
-    list(REMOVE_ITEM LIB_SOURCES ${MAIN_SOURCES})
+# Для multi-config генераторів (Visual Studio) встановити директорії для кожної конфігурації
+if(CMAKE_CONFIGURATION_TYPES)
+  foreach(cfg ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER "${cfg}" cfg_u)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${cfg_u} ${CMAKE_BINARY_DIR}/bin/${cfg})
+  endforeach()
 endif()
 
-# Якщо є джерела для бібліотеки — створюємо бібліотеку
-if(LIB_SOURCES)
-    add_library(${PROJECT_NAME}_lib STATIC ${LIB_SOURCES})
-    target_include_directories(${PROJECT_NAME}_lib PUBLIC ${CMAKE_SOURCE_DIR})
-    if(MSVC)
-        target_compile_options(${PROJECT_NAME}_lib PRIVATE /W4 /permissive-)
-    else()
-        target_compile_options(${PROJECT_NAME}_lib PRIVATE -Wall -Wextra -Wpedantic)
+
+
+# Автоматичний пошук .cpp файлів у корені проекту та в src/, якщо змінні не задані
+if(NOT DEFINED ALL_SOURCES)
+    file(GLOB_RECURSE ALL_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/*.cpp"
+        "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    )
+
+    # Виключити директорії збірки й зовнішні залежності
+    list(FILTER ALL_SOURCES EXCLUDE REGEX "(/|\\\\)(build|_deps|googletest|CMakeFiles|tests)(/|\\\\)")
+endif()
+
+if(NOT DEFINED MAIN_SOURCES)
+    set(MAIN_SOURCES "")
+    foreach(_f IN LISTS ALL_SOURCES)
+        get_filename_component(_name ${_f} NAME)
+        if(_name STREQUAL "main.cpp")
+            list(APPEND MAIN_SOURCES ${_f})
+        endif()
+    endforeach()
+    # Якщо немає знайдених main.cpp, але є main.cpp у корені — додати його
+    if(MAIN_SOURCES STREQUAL "" AND EXISTS "${CMAKE_SOURCE_DIR}/main.cpp")
+        set(MAIN_SOURCES "${CMAKE_SOURCE_DIR}/main.cpp")
+    endif()
+endif()
+
+if(NOT DEFINED LIB_SOURCES)
+    set(LIB_SOURCES ${ALL_SOURCES})
+    if(MAIN_SOURCES)
+        foreach(_m IN LISTS MAIN_SOURCES)
+            list(REMOVE_ITEM LIB_SOURCES ${_m})
+        endforeach()
     endif()
 endif()
 
@@ -65,27 +78,25 @@ if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/unit_tests.cpp")
     FetchContent_Declare(
       googletest
       URL https://github.com/google/googletest/archive/refs/heads/main.zip
+      DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     # Завантажити і додати googletest
     FetchContent_MakeAvailable(googletest)
 
-    # Створити тестовий виконуваний файл з наявного файла tests/unit_tests.cpp.
-    # У вашому tests/unit_tests.cpp вже є власний main(), тому лінкуємо з GTest::gtest (не з gtest_main),
-    # щоб не було конфлікту двох main.
     add_executable(${PROJECT_NAME}_tests
         tests/unit_tests.cpp
     )
 
     target_include_directories(${PROJECT_NAME}_tests PRIVATE ${CMAKE_SOURCE_DIR})
 
-    # Лінкування: GTest (без gtest_main, оскільки main у тестах) і (за наявності) бібліотека проекту
-    target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest)
+    # Лінкування: GTest main (надає main) і (за наявності) бібліотека проекту
+    target_link_libraries(${PROJECT_NAME}_tests PRIVATE GTest::gtest_main)
     if(TARGET ${PROJECT_NAME}_lib)
         target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME}_lib)
     else()
-        # Якщо не маєте окремої бібліотеки, додайте загальні джерела до тестів (щоб використовувати add())
-        if(ALL_SOURCES)
-            target_sources(${PROJECT_NAME}_tests PRIVATE ${ALL_SOURCES})
+        # Якщо не маєте окремої бібліотеки, додайте бібліотечні джерела (без main) до тестів
+        if(LIB_SOURCES)
+            target_sources(${PROJECT_NAME}_tests PRIVATE ${LIB_SOURCES})
         endif()
     endif()
 
@@ -95,7 +106,8 @@ if(BUILD_TESTS AND EXISTS "${CMAKE_SOURCE_DIR}/tests/unit_tests.cpp")
         target_compile_options(${PROJECT_NAME}_tests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 
-    add_test(NAME unit_tests COMMAND ${PROJECT_NAME}_tests)
+    # Використовувати TARGET_FILE у add_test, щоб CTest знав точний шлях у multi-config
+    add_test(NAME unit_tests COMMAND $<TARGET_FILE:${PROJECT_NAME}_tests>)
 endif()
 
 # Правила встановлення
