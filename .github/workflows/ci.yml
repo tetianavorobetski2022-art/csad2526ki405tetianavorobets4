@@ -30,18 +30,21 @@ jobs:
         with:
           cmake-version: '3.27.0'
 
-      # 3. Запуск скрипту для конкретної ОС
-      - name: Run build script
+      # 3. Windows
+      - name: Run build script (Windows)
+        if: runner.os == 'Windows'
+        run: cmd /c ci.bat
+        shell: cmd
+
+      # 4. Unix (Ubuntu, macOS)
+      - name: Run build script (Unix)
+        if: runner.os != 'Windows'
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            cmd /c ci.bat
-          else
-            chmod +x ci.sh
-            ./ci.sh
-          fi
+          chmod +x ci.sh
+          ./ci.sh
         shell: bash
 
-      # 4. Deploy (приклад — можна змінити)
+      # 5. Deploy (приклад)
       - name: Deploy
         if: success()
         run: echo "Deploy completed for ${{ matrix.os }}"
