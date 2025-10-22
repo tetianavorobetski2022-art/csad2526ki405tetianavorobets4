@@ -1,0 +1,47 @@
+name: Cross-platform Build
+
+on:
+  push:
+    branches:
+      - '*develop*'
+      - '*master*'
+  pull_request:
+    branches:
+      - '*develop*'
+      - '*master*'
+
+jobs:
+  cross_build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      # 1. Checkout коду
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Встановлення CMake (за потреби)
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.27.0'
+
+      # 3. Запуск скрипту для конкретної ОС
+      - name: Run build script
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cmd /c ci.bat
+          else
+            chmod +x ci.sh
+            ./ci.sh
+          fi
+        shell: bash
+
+      # 4. Deploy (приклад — можна змінити)
+      - name: Deploy
+        if: success()
+        run: echo "Deploy completed for ${{ matrix.os }}"
